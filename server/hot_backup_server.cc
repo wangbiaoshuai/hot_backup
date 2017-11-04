@@ -247,6 +247,21 @@ int HotBackupServer::CheckDatabaseStatus()
 
 int HotBackupServer::CheckMonitorStatus()
 {
+    string cmd = "ps axf | grep cemsmonitor";
+    int status = system(cmd.c_str());
+    if(WIFEXITED(status) != 0)
+    {
+        if(WEXITSTATUS(status) != 0)
+        {
+            LOG_ERROR("CheckMonitorStatus: cmd("<<cmd.c_str()<<") exec error. Monitor has down.");
+            return -1;
+        }
+    }
+    else
+    {
+        LOG_ERROR("CheckMonitorStatus: cmd("<<cmd.c_str()<<") exit error.");
+        return -1;
+    }
     return 0;
 }
 
@@ -320,7 +335,7 @@ int HotBackupServer::SwitchIp()
 {
     LOG_INFO("SwitchIp: begin.");
     string path = GetCurrentPath();
-    string cmd = path + "/switch_ip.sh >>/tmp/hot_backup_client.stdout 2>&1";
+    string cmd = path + "/switch_ip.sh >>/tmp/hot_backup_server.stdout 2>&1";
  /*   FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {

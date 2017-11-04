@@ -70,4 +70,5 @@ function main()
 }
 
 main $@
+echo "$0 exec success!"
 exit 0
