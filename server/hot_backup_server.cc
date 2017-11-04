@@ -11,6 +11,9 @@
 #include <arpa/inet.h>
 #include <mysql/mysql.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "common_function.h"
 
 #define MAX_COUNT 6
 #define CHECK_TIME 20
@@ -249,66 +252,100 @@ int HotBackupServer::CheckMonitorStatus()
 
 int HotBackupServer::RestartDatabase()
 {
-    int res = 0;
-    FILE* fp = popen("service mysqld start", "r");
+    LOG_INFO("RestartDatabase: begin.");
+    string cmd = "service mysqld start >>/tmp/hot_backup_server.stdout 2>&1";
+/*    FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
-        res = -1;
         LOG_ERROR("RestartDatabase: popen error("<<strerror(errno)<<").");
-        return res;
+        return -1;
     }
 
-    int rc = pclose(fp);
-    if(rc == -1)
+    int status = pclose(fp);*/
+    int status = system(cmd.c_str());
+    if(WIFEXITED(status) != 0)
     {
-        res = -1;
-        LOG_ERROR("RestartDatabase: command(service mysqld start) exec error, exit("<<WEXITSTATUS(rc)<<").");
-        return res;
+        if(WEXITSTATUS(status) != 0)
+        {
+            LOG_ERROR("RestartDatabase: command("<<cmd.c_str()<<") exec failed, exit("<<WEXITSTATUS(status)<<").");
+            return -1;
+        }
+        else
+        {
+            LOG_INFO("RestartDatabase: command("<<cmd.c_str()<<") exec success!");
+            return 0;
+        }
     }
-    LOG_INFO("RestartDatabase: start database success!");
-    return res;
+    else
+    {
+        LOG_ERROR("RestartDatabase: command("<<cmd.c_str()<<") exit error.");
+        return -1;
+    }
 }
 
 int HotBackupServer::RestartMonitor()
 {
-    int res = 0;
-    FILE* fp = popen("service CEMS-SERVICE-MONITOR start", "r");
+    LOG_INFO("RestartMonitor: begin.");
+    string cmd = "service CEMS-SERVICE-MONITOR start >>/tmp/hot_backup_server.stdout 2>&1";
+ /*   FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
-        res = -1;
         LOG_ERROR("RestartMonitor: popen error("<<strerror(errno)<<").");
-        return res;
+        return -1;
     }
 
-    int rc = pclose(fp);
-    if(rc == -1)
+    int status = pclose(fp);*/
+    int status = system(cmd.c_str());
+    if(WIFEXITED(status) != 0)
     {
-        res = -1;
-        LOG_ERROR("RestartMonitor: command(service CEMS-SERVICE-MONITOR start) exec error, exit("<<WEXITSTATUS(rc)<<").");
-        return res;
+        if(WEXITSTATUS(status) != 0)
+        {
+            LOG_ERROR("RestartMonitor: command("<<cmd.c_str()<<") exec failed, exit("<<WEXITSTATUS(status)<<").");
+            return -1;
+        }
+        else
+        {
+            LOG_INFO("RestartMonitor: command("<<cmd.c_str()<<") exec success!");
+            return 0;
+        }
     }
-    LOG_INFO("RestartMonitor: start monitor success!");
-    return res;
+    else
+    {
+        LOG_ERROR("RestartMonitor: command("<<cmd.c_str()<<") exit error.");
+        return -1;
+    }
 }
 
 int HotBackupServer::SwitchIp()
 {
-    int res = 0;
-    FILE* fp = popen("./switch_ip.sh >/tmp/hot_backup_server.stdout 2>&1", "r");
+    LOG_INFO("SwitchIp: begin.");
+    string path = GetCurrentPath();
+    string cmd = path + "/switch_ip.sh >>/tmp/hot_backup_client.stdout 2>&1";
+ /*   FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
-        res = -1;
         LOG_ERROR("SwitchIp: popen error("<<strerror(errno)<<").");
-        return res;
+        return -1;
     }
 
-    int rc = pclose(fp);
-    if(rc == -1)
+    int status = pclose(fp);*/
+    int status = system(cmd.c_str());
+    if(WIFEXITED(status) != 0)
     {
-        res = -1;
-        LOG_ERROR("SwitchIp: command(./switch_ip.sh) exec error, exit("<<WEXITSTATUS(rc)<<").");
-        return res;
+        if(WEXITSTATUS(status) != 0)
+        {
+            LOG_ERROR("SwitchIp: command("<<cmd.c_str()<<") exec failed, exit("<<WEXITSTATUS(status)<<").");
+            return -1;
+        }
+        else
+        {
+            LOG_INFO("SwitchIp: command("<<cmd.c_str()<<") exec success!");
+            return 0;
+        }
     }
-    LOG_INFO("SwitchIp: change ip success!");
-    return res;
+    else
+    {
+        LOG_ERROR("SwitchIp: command("<<cmd.c_str()<<") exit error.");
+        return -1;
+    }
 }

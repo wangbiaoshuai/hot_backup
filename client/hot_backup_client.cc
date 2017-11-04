@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "common_function.h"
 using namespace std;
@@ -149,25 +150,33 @@ int HotBackupClient::ParsePackage(const char* msg)
 int HotBackupClient::ChangeServer()
 {
     LOG_INFO("ChangeServer: begin.");
-    int res = 0;
     string path = GetCurrentPath();
-    string cmd = path + "/switch_server.sh " + server_ip_ + " >>/tmp/hot_backup_client.stdout 2>>&1";
-    FILE* fp = popen(cmd.c_str(), "r");
+    string cmd = path + "/switch_server.sh " + server_ip_ + " >>/tmp/hot_backup_client.stdout 2>&1";
+/*    FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
-        res = -1;
         LOG_ERROR("ChangeServer: popen error("<<strerror(errno)<<").");
+        return -1;
     }
 
-    int rc = pclose(fp);
-    if(rc == -1)
+    int status = pclose(fp);*/
+    int status = system(cmd.c_str());
+    if(WIFEXITED(status) != 0)
     {
-        res = -1;
-        LOG_ERROR("ChangeServer: command("<<cmd.c_str()<<") exec error, exit("<<WEXITSTATUS(rc)<<").");
+        if(WEXITSTATUS(status) != 0)
+        {
+            LOG_ERROR("ChangeServer: command("<<cmd.c_str()<<") exec failed, exit("<<WEXITSTATUS(status)<<").");
+            return -1;
+        }
+        else
+        {
+            LOG_INFO("ChangeServer: command("<<cmd.c_str()<<") exec success!");
+            return 0;
+        }
     }
     else
     {
-        LOG_INFO("ChangeServer: start server success!");
+        LOG_ERROR("ChangeServer: command("<<cmd.c_str()<<") exit error.");
+        return -1;
     }
-    return res;
 }
