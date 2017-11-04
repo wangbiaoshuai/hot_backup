@@ -29,4 +29,12 @@ common_function.o: common_function.cc
 .PHONY: clean
 
 clean:
-	${RM} *.o ./bin/hot_backup_server
+	${RM} *.o ./bin/hot_backup_server 
+	rm -rf ./hot_backup_server
+
+package:
+	mkdir -p hot_backup_server
+	cp -r bin hot_backup_server
+	mv ./hot_backup_server/bin/install.sh ./hot_backup_server/
+	mv ./hot_backup_server/bin/uninstall.sh ./hot_backup_server/
+

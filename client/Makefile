@@ -28,4 +28,11 @@ common_function.o: common_function.cc
 
 clean:
 	${RM} ./bin/hot_backup_client *.o
+	rm -rf hot_backup_client
+
+package:
+	mkdir -p hot_backup_client
+	cp -r ./bin ./hot_backup_client
+	mv ./hot_backup_client/bin/install.sh ./hot_backup_client
+	mv ./hot_backup_client/bin/uninstall.sh ./hot_backup_client
 
