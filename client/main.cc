@@ -29,7 +29,7 @@ int init_daemon(void)  //创建守护进程
     signal(SIGHUP, SIG_IGN);
  
     //8)处理SIGCHLD信号
-    signal(SIGCHLD, SIG_IGN);
+    //signal(SIGCHLD, SIG_IGN);
 
     //2)后台运行
     pid = fork();
@@ -47,7 +47,7 @@ int init_daemon(void)  //创建守护进程
     setsid();
 
     //4)禁止进程重新打开控制终端
-    pid = fork();
+    /*pid = fork();
     if(pid > 0)
     {
         exit(0);
@@ -56,7 +56,7 @@ int init_daemon(void)  //创建守护进程
     {
         perror("fork");
         exit(EXIT_FAILURE);
-    }
+    }*/
 
     //5)关闭打开的文件描述符
     for(int i = 0; i < NOFILE; i++)

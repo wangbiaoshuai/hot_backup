@@ -1,7 +1,5 @@
 #!/bin/sh
 
-install_dir="/usr/local"
-DEAMON_DIR="${install_dir}/hot_backup_client"
 proc_name="hot_backup_client"
 
 ps axf | grep ${proc_name} | grep -v grep | awk '{print $1}' | xargs -t -I{} kill -9 {}
@@ -13,6 +11,5 @@ then
     exit 1
 fi
 
-rm -rf ${DEAMON_DIR}
-echo "uninstall ${proc_name} success!"
+echo "stop ${proc_name} success!"
 exit 0

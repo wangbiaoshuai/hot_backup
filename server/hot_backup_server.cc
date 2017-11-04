@@ -16,7 +16,7 @@
 #include "common_function.h"
 
 #define MAX_COUNT 6
-#define CHECK_TIME 20
+#define CHECK_TIME 30
 
 using namespace std;
 
@@ -247,7 +247,7 @@ int HotBackupServer::CheckDatabaseStatus()
 
 int HotBackupServer::CheckMonitorStatus()
 {
-    string cmd = "ps axf | grep cemsmonitor";
+    /*string cmd = "pgrep cemsmonitor";
     int status = system(cmd.c_str());
     if(WIFEXITED(status) != 0)
     {
@@ -262,13 +262,14 @@ int HotBackupServer::CheckMonitorStatus()
         LOG_ERROR("CheckMonitorStatus: cmd("<<cmd.c_str()<<") exit error.");
         return -1;
     }
-    return 0;
+    return 0;*/
+    return ProcIsExist("cemsmonitor");
 }
 
 int HotBackupServer::RestartDatabase()
 {
     LOG_INFO("RestartDatabase: begin.");
-    string cmd = "service mysqld start >>/tmp/hot_backup_server.stdout 2>&1";
+    string cmd = "service mysqld start";
 /*    FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
@@ -301,7 +302,7 @@ int HotBackupServer::RestartDatabase()
 int HotBackupServer::RestartMonitor()
 {
     LOG_INFO("RestartMonitor: begin.");
-    string cmd = "service CEMS-SERVICE-MONITOR start >>/tmp/hot_backup_server.stdout 2>&1";
+    string cmd = "service CEMS-SERVICE-MONITOR start";
  /*   FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {
@@ -335,7 +336,7 @@ int HotBackupServer::SwitchIp()
 {
     LOG_INFO("SwitchIp: begin.");
     string path = GetCurrentPath();
-    string cmd = path + "/switch_ip.sh >>/tmp/hot_backup_server.stdout 2>&1";
+    string cmd = path + "/switch_ip.sh";
  /*   FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {

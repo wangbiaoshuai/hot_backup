@@ -151,7 +151,7 @@ int HotBackupClient::ChangeServer()
 {
     LOG_INFO("ChangeServer: begin.");
     string path = GetCurrentPath();
-    string cmd = path + "/switch_server.sh " + server_ip_ + " >>/tmp/hot_backup_client.stdout 2>&1";
+    string cmd = path + "/switch_server.sh " + server_ip_;
 /*    FILE* fp = popen(cmd.c_str(), "r");
     if(fp == NULL)
     {

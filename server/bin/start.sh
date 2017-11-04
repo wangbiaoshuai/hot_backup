@@ -6,9 +6,6 @@ proc_name="hot_backup_server"
 DEAMON="${DEAMON_DIR}/${proc_name}"
 
 ps axf | grep ${proc_name} | grep -v grep | awk '{print $1}' | xargs -t -I{} kill -9 {}
-mkdir -p ${install_dir}
-cp -r ./bin ${DEAMON_DIR}
-
 cd ${DEAMON_DIR} && chmod +x switch_ip.sh && cd -
 cd ${DEAMON_DIR} && ${DEAMON} && cd -
 
