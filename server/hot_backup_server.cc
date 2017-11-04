@@ -1,0 +1,314 @@
+#include "hot_backup_server.h"
+#include "log.h"
+
+#include <pthread.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <mysql/mysql.h>
+#include <stdio.h>
+
+#define MAX_COUNT 6
+#define CHECK_TIME 20
+
+using namespace std;
+
+HotBackupServer::HotBackupServer(const string& ip, int port):
+server_ip_(""),
+server_port_(-1),
+abnormal_count_(0),
+flag_switch_(false),
+stop_heart_beat_(false)
+{
+    ip.empty()? "" : server_ip_ = ip;
+    (port <= 0)? 0 : server_port_ = port;
+}
+
+HotBackupServer::~HotBackupServer()
+{
+}
+
+void HotBackupServer::Start()
+{
+    LOG_INFO("Hot backup server Start!");
+    while(1)
+    {
+        if(StartHeartBeat() == 0)
+        {
+            break;
+        }
+        else
+        {
+            LOG_WARN("Start: start hear beat failed. Sleep 3s...");
+            sleep(3);
+        }
+    }
+
+    while(1)
+    {
+        int res1 = CheckDatabaseStatus();
+        int res2 = CheckMonitorStatus();
+        if(res1 == 0 && res2 == 0)
+        {
+            LOG_INFO("All is well. Sleep "<<CHECK_TIME<<"s...");
+            abnormal_count_ = 0;
+            sleep(CHECK_TIME);
+        }
+        else
+        {
+            abnormal_count_++;
+            if(abnormal_count_ <= MAX_COUNT)
+            {
+                if(res1 < 0)
+                {
+                    LOG_WARN("Start: database is abnormal. Restart database...");
+                    RestartDatabase();
+                }
+                if(res2 < 0)
+                {
+                    LOG_WARN("Start: monitor is abnormal. Restart monitor...");
+                    RestartMonitor();
+                }
+                sleep(CHECK_TIME);
+            }
+            else
+            {
+                flag_switch_ = true;
+                break;
+            }
+        }
+    }
+    StopHeartBeat();
+    LOG_INFO("Hot backup server stoped!");
+    return;
+}
+
+void* thread_function(void* context)
+{
+    HotBackupServer* ctx = static_cast<HotBackupServer*>(context);
+    ctx->HeartBeat();
+    LOG_INFO("thread_function: heart beat stoped!");
+    pthread_exit(NULL);
+}
+
+int HotBackupServer::StartHeartBeat()
+{
+    stop_heart_beat_ = false;
+    int res = pthread_create(&heart_beat_thread_, NULL, thread_function, this);
+    if(res < 0)
+    {
+        LOG_ERROR("StartHeartBeat: create thread error("<<strerror(errno)<<").");
+        return -1;
+    }
+    return 0;
+}
+
+int HotBackupServer::StopHeartBeat()
+{
+    if(stop_heart_beat_ == false)
+    {
+        stop_heart_beat_ = true;
+        int res = pthread_join(heart_beat_thread_, NULL);
+        if(res < 0)
+        {
+            LOG_ERROR("StopHeartBeat: stop heart beat error("<<strerror(errno)<<").");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+void HotBackupServer::HeartBeat()
+{
+    LOG_INFO("HeartBeat: start.");
+    int sock;
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+ 
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(server_ip_.c_str());
+    server_addr.sin_port = htons(server_port_);
+
+    //设置地址可重用
+    int flag = 1;
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0)
+    {
+        LOG_ERROR("HeartBeat: setsockopt SO_REUSEADDR error("<<strerror(errno)<<").");
+        close(sock);
+        return;
+    }
+
+    int res = bind(sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    if(res < 0)
+    {
+        LOG_ERROR("HeartBeat: bind error("<<strerror(errno)<<").");
+        close(sock);
+        return;
+    }
+
+    struct timeval tv;
+    tv.tv_sec = 4 * CHECK_TIME;
+    tv.tv_usec = 0;
+
+    //设置数据接收超时
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+    {
+        LOG_ERROR("HeartBeat: setsockopt SO_RCVTIMEO error("<<strerror(errno)<<").");
+        close(sock);
+        return;
+    }
+
+    while(!stop_heart_beat_)
+    {
+        char data[512] = {0};
+        struct sockaddr_in client_addr;
+        memset(&client_addr, 0, sizeof(client_addr));
+        int len = sizeof(client_addr);
+        
+        res = recvfrom(sock, data, sizeof(data) - 1, 0, (struct sockaddr*)&client_addr, (socklen_t*)&len);
+        if(res < 0)
+        {
+            LOG_ERROR("HeartBeat: recv message error("<<strerror(errno)<<").");
+            continue;
+        }
+        if(strcmp(data, "heart-beat") != 0)
+        {
+            LOG_WARN("HeartBeat: recv message error, message="<<data);
+            continue;
+        }
+
+        if(flag_switch_)
+        {
+            const char* message = "switch-server";
+            res = sendto(sock, message, strlen(message), 0, (struct sockaddr*)&client_addr, len);
+            LOG_DEBUG("HeartBeat: switch-server...");
+            if(res < 0)
+            {
+                LOG_ERROR("HeartBeat: send message error("<<strerror(errno)<<").");
+                continue;
+            }
+
+            if(SwitchIp() < 0)
+            {
+                LOG_ERROR("HeartBeat: switch IP error.");
+            } 
+            break;
+        }
+        else
+        {
+            res = sendto(sock, data, strlen(data), 0, (struct sockaddr*)&client_addr, len);
+            if(res < 0)
+            {
+                LOG_ERROR("HeartBeat: send message error("<<strerror(errno)<<").");
+            }
+            
+            LOG_DEBUG("HeartBeat: heart-beat...");
+            continue;
+        }
+    }
+    close(sock);
+    return;
+}
+
+int HotBackupServer::CheckDatabaseStatus()
+{
+    int res = 0;
+    MYSQL* con = mysql_init((MYSQL* )0);
+
+    const char* host = "localhost";
+    const char* user = "root";
+    const char* passwd = "VRV!@#3xa";
+    const char* database = "cems";
+    unsigned int port = 3306;
+    const char* unix_socket = "/tmp/mysql.sock";
+
+    if(con != NULL && mysql_real_connect(con, host, user, passwd, database, port, unix_socket, 0))
+    {
+        res = 0;
+        //LOG_DEBUG("CheckDatabaseStatus: database is normal.");
+    }
+    else
+    {
+        res = -1;
+        LOG_ERROR("CheckDatabaseStatus: connect mysql error("<<mysql_error(con)<<").");
+    }
+
+    mysql_close(con);
+    return res;
+}
+
+int HotBackupServer::CheckMonitorStatus()
+{
+    return 0;
+}
+
+int HotBackupServer::RestartDatabase()
+{
+    int res = 0;
+    FILE* fp = popen("service mysqld start", "r");
+    if(fp == NULL)
+    {
+        res = -1;
+        LOG_ERROR("RestartDatabase: popen error("<<strerror(errno)<<").");
+        return res;
+    }
+
+    int rc = pclose(fp);
+    if(rc == -1)
+    {
+        res = -1;
+        LOG_ERROR("RestartDatabase: command(service mysqld start) exec error, exit("<<WEXITSTATUS(rc)<<").");
+        return res;
+    }
+    LOG_INFO("RestartDatabase: start database success!");
+    return res;
+}
+
+int HotBackupServer::RestartMonitor()
+{
+    int res = 0;
+    FILE* fp = popen("service CEMS-SERVICE-MONITOR start", "r");
+    if(fp == NULL)
+    {
+        res = -1;
+        LOG_ERROR("RestartMonitor: popen error("<<strerror(errno)<<").");
+        return res;
+    }
+
+    int rc = pclose(fp);
+    if(rc == -1)
+    {
+        res = -1;
+        LOG_ERROR("RestartMonitor: command(service CEMS-SERVICE-MONITOR start) exec error, exit("<<WEXITSTATUS(rc)<<").");
+        return res;
+    }
+    LOG_INFO("RestartMonitor: start monitor success!");
+    return res;
+}
+
+int HotBackupServer::SwitchIp()
+{
+    int res = 0;
+    FILE* fp = popen("./switch_ip.sh >/tmp/hot_backup_server.stdout 2>&1", "r");
+    if(fp == NULL)
+    {
+        res = -1;
+        LOG_ERROR("SwitchIp: popen error("<<strerror(errno)<<").");
+        return res;
+    }
+
+    int rc = pclose(fp);
+    if(rc == -1)
+    {
+        res = -1;
+        LOG_ERROR("SwitchIp: command(./switch_ip.sh) exec error, exit("<<WEXITSTATUS(rc)<<").");
+        return res;
+    }
+    LOG_INFO("SwitchIp: change ip success!");
+    return res;
+}
