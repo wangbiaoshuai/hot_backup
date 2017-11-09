@@ -101,7 +101,7 @@ std::string GetCurrentPath()
 using namespace std;
 
 const char* f_cmdline = "cmdline";
-char* proc_name = NULL;
+const char* proc_name = NULL;
 #define PROC_DIR "/proc"
 
 int GrepFile(const char* file_name, const char* str)
@@ -183,11 +183,14 @@ int printdir(char *dir, int depth)
 
 int ProcIsExist(const std::string& proc)
 {
-    proc_name = (char*)proc.c_str();
+    string curr_path = GetCurrentPath();
+    proc_name = proc.c_str();
     if(printdir(PROC_DIR, 0) == 0)
     {
+        chdir(curr_path.c_str());
         return 0;
     }
+    chdir(curr_path.c_str());
     return -1;
 }
 

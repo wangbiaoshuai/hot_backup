@@ -11,7 +11,7 @@ LIB = -Wl,-R,"./" \
 	  -L./log4cplus/lib -llog4cplus -lrt \
 	  -L/usr/lib64/mysql -lmysqlclient
 INCLUDE = -I./log4cplus/include
-CXXFLAGS = ${INCLUDE} ${LIB} -pthread -DREENTRANT ${DEBUG}
+CXXFLAGS = -Wall ${INCLUDE} ${LIB} -pthread -DREENTRANT ${DEBUG}
 
 hot_backup_server: main.o hot_backup_server.o common_function.o
 	${CXX} -o ./bin/$@ $^ ${CXXFLAGS}

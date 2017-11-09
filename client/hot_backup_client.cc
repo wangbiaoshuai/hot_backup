@@ -152,15 +152,15 @@ int HotBackupClient::ChangeServer()
     LOG_INFO("ChangeServer: begin.");
     string path = GetCurrentPath();
     string cmd = path + "/switch_server.sh " + server_ip_;
-/*    FILE* fp = popen(cmd.c_str(), "r");
+    FILE* fp = popen(cmd.c_str(), "w");
     if(fp == NULL)
     {
         LOG_ERROR("ChangeServer: popen error("<<strerror(errno)<<").");
         return -1;
     }
 
-    int status = pclose(fp);*/
-    int status = system(cmd.c_str());
+    int status = pclose(fp);
+    //int status = system(cmd.c_str());
     if(WIFEXITED(status) != 0)
     {
         if(WEXITSTATUS(status) != 0)

@@ -270,15 +270,15 @@ int HotBackupServer::RestartDatabase()
 {
     LOG_INFO("RestartDatabase: begin.");
     string cmd = "service mysqld start";
-/*    FILE* fp = popen(cmd.c_str(), "r");
+    FILE* fp = popen(cmd.c_str(), "w");
     if(fp == NULL)
     {
         LOG_ERROR("RestartDatabase: popen error("<<strerror(errno)<<").");
         return -1;
     }
 
-    int status = pclose(fp);*/
-    int status = system(cmd.c_str());
+    int status = pclose(fp);
+    //int status = system(cmd.c_str());
     if(WIFEXITED(status) != 0)
     {
         if(WEXITSTATUS(status) != 0)
@@ -303,15 +303,15 @@ int HotBackupServer::RestartMonitor()
 {
     LOG_INFO("RestartMonitor: begin.");
     string cmd = "service CEMS-SERVICE-MONITOR start";
- /*   FILE* fp = popen(cmd.c_str(), "r");
+    FILE* fp = popen(cmd.c_str(), "w");
     if(fp == NULL)
     {
         LOG_ERROR("RestartMonitor: popen error("<<strerror(errno)<<").");
         return -1;
     }
 
-    int status = pclose(fp);*/
-    int status = system(cmd.c_str());
+    int status = pclose(fp);
+    //int status = system(cmd.c_str());
     if(WIFEXITED(status) != 0)
     {
         if(WEXITSTATUS(status) != 0)
@@ -337,15 +337,15 @@ int HotBackupServer::SwitchIp()
     LOG_INFO("SwitchIp: begin.");
     string path = GetCurrentPath();
     string cmd = path + "/switch_ip.sh";
- /*   FILE* fp = popen(cmd.c_str(), "r");
+    FILE* fp = popen(cmd.c_str(), "w");
     if(fp == NULL)
     {
         LOG_ERROR("SwitchIp: popen error("<<strerror(errno)<<").");
         return -1;
     }
 
-    int status = pclose(fp);*/
-    int status = system(cmd.c_str());
+    int status = pclose(fp);
+    //int status = system(cmd.c_str());
     if(WIFEXITED(status) != 0)
     {
         if(WEXITSTATUS(status) != 0)
