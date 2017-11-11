@@ -121,8 +121,8 @@ int main(int args, char* argv[])
             LOG_ERROR("Usage: ./hot_backup client server_ip server_port");
             return -1;
         }
-        string server_ip(argv[2]);
-        int server_port = atoi(argv[3]);
+        server_ip = argv[2];
+        server_port = atoi(argv[3]);
         LOG_INFO("main: local_ip="<<local_ip.c_str()<<", local_port="<<port<<", server_ip="<<server_ip.c_str()<<", server_port="<<server_port);
         printf("main: local_ip=%s, local_port=%d, server_ip=%s, server_port=%d\n", local_ip.c_str(), port, server_ip.c_str(), server_port);
         fflush(NULL);
@@ -151,7 +151,7 @@ int main(int args, char* argv[])
         {
             HotBackupServer server(server_ip, port);
             server.Start();
-            server_ip = GetServerIp();
+            //server_ip = GetServerIp();
             local_ip = GetCurrentIp();
             LOG_INFO("main: server stoped. local_ip="<<local_ip.c_str()<<", server_ip="<<server_ip.c_str());
             if(server_ip == local_ip)
@@ -167,7 +167,7 @@ int main(int args, char* argv[])
         {
             HotBackupClient client(local_ip, port, server_ip, port);
             client.Start();
-            server_ip = GetServerIp();
+            //server_ip = GetServerIp();
             local_ip = GetCurrentIp();
             LOG_INFO("main: client stoped. local_ip="<<local_ip.c_str()<<", server_ip="<<server_ip.c_str());
             if(server_ip.compare(local_ip) == 0)
