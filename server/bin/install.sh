@@ -10,7 +10,7 @@ mkdir -p ${install_dir}
 cp -r ./bin ${DEAMON_DIR}
 
 cd ${DEAMON_DIR} && chmod +x switch_ip.sh && cd -
-cd ${DEAMON_DIR} && ${DEAMON} && cd -
+cd ${DEAMON_DIR} && ${DEAMON} server && cd -
 
 pid=`ps axf | grep ${proc_name} | grep -v grep | awk '{print $1}'`
 if [ "${pid}" = "" ]

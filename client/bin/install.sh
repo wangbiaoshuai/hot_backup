@@ -21,7 +21,7 @@ cp -r ./bin ${DEAMON_DIR}
 cd ${DEAMON_DIR} && chmod +x switch_server.sh && cd -
 
 ps axf | grep ${proc_name} | grep -v grep | awk '{print $1}' | xargs -t -I{} kill -9 {}
-cd ${DEAMON_DIR} && ${DEAMON} ${server_ip} ${server_port} && cd -
+cd ${DEAMON_DIR} && ${DEAMON} client ${server_ip} ${server_port} && cd -
 
 sleep 1
 pid=`ps axf | grep ${proc_name} | grep -v grep | awk '{print $1}'`

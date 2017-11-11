@@ -10,6 +10,7 @@
 
 #include "log.h"
 #include "common_function.h"
+#include "hot_backup_server.h"
 
 using namespace std;
 const char* log_config_file = "./log4cplus.properties";
@@ -83,25 +84,101 @@ int init_daemon(void)  //创建守护进程
     return 0;
 }
 
+string GetServerIp()
+{
+    string ip_file("/tmp/server_ip");
+    FILE* fp = fopen(ip_file.c_str(), "r");
+    if(fp == NULL)
+    {
+        LOG_ERROR("StartHotBackupClient: open file "<<ip_file.c_str()<<" error("<<strerror(errno)<<").");
+        return "";
+    }
+    char ip[20] = {0};
+    fgets(ip, sizeof(ip) - 1, fp);
+    fclose(fp);
+    return string(ip);
+}
+
 int main(int args, char* argv[])
 {
     init_daemon();
     INIT_LOG(log_config_file);
-    if(args != 3)
+    if(args < 2)
     {
-        LOG_ERROR("Usage: ./hot_backup_client server_ip server_port");
+        LOG_ERROR("Usage: ./hot_backup client/server");
         return -1;
     }
-    
-    string local_ip = GetCurrentIp();
-    int local_port = LOCAL_PORT;
-    string server_ip(argv[1]);
-    int server_port = atoi(argv[2]);
-    LOG_INFO("main: local_ip="<<local_ip.c_str()<<", local_port="<<local_port<<", server_ip="<<server_ip.c_str()<<", server_port="<<server_port);
-    printf("main: local_ip=%s, local_port=%d, server_ip=%s, server_port=%d\n", local_ip.c_str(), local_port, server_ip.c_str(), server_port);
-    fflush(NULL);
 
-    HotBackupClient client(local_ip, local_port, server_ip, server_port);
-    client.Start();
+    string local_ip = GetCurrentIp();
+    int port = LOCAL_PORT;
+    string server_ip;
+    int server_port;
+    int flag;
+    if(strcmp(argv[1], "client") == 0)
+    {
+        if(args != 4)
+        {
+            LOG_ERROR("Usage: ./hot_backup client server_ip server_port");
+            return -1;
+        }
+        string server_ip(argv[2]);
+        int server_port = atoi(argv[3]);
+        LOG_INFO("main: local_ip="<<local_ip.c_str()<<", local_port="<<port<<", server_ip="<<server_ip.c_str()<<", server_port="<<server_port);
+        printf("main: local_ip=%s, local_port=%d, server_ip=%s, server_port=%d\n", local_ip.c_str(), port, server_ip.c_str(), server_port);
+        fflush(NULL);
+        flag = 0;
+    }
+
+    if(strcmp(argv[1], "server") == 0)
+    {
+        server_ip = local_ip;
+
+        if(server_ip.empty() || port <= 0)
+        {
+            LOG_ERROR("main: ip/port is error.");
+            return -1;
+        }
+        LOG_INFO("main: server_ip="<<server_ip.c_str()<<", server_port="<<port);
+        printf("main: server_ip=%s, server_port=%d\n", server_ip.c_str(), port);
+        fflush(NULL);
+
+        flag = 1;
+    }
+
+    while(1)
+    {
+        if(flag == 1)
+        {
+            HotBackupServer server(server_ip, port);
+            server.Start();
+            server_ip = GetServerIp();
+            local_ip = GetCurrentIp();
+            LOG_INFO("main: server stoped. local_ip="<<local_ip.c_str()<<", server_ip="<<server_ip.c_str());
+            if(server_ip == local_ip)
+            {
+                flag = 1;
+            }
+            else
+            {
+                flag = 0;
+            }
+        }
+        else
+        {
+            HotBackupClient client(local_ip, port, server_ip, port);
+            client.Start();
+            server_ip = GetServerIp();
+            local_ip = GetCurrentIp();
+            LOG_INFO("main: client stoped. local_ip="<<local_ip.c_str()<<", server_ip="<<server_ip.c_str());
+            if(server_ip.compare(local_ip) == 0)
+            {
+                flag = 1;
+            }
+            else
+            {
+                flag = 0;
+            }
+        }
+    }
     return 0;
 }

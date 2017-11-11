@@ -9,11 +9,12 @@ endif
 CXX = g++
 LIB = -Wl,-R,"./" \
 	  -L./log4cplus/lib -llog4cplus -lrt \
-	  -L/usr/lib64/mysql -lmysqlclient
+	  -L/usr/lib64/mysql -lmysqlclient \
+	  -pthread
 INCLUDE = -I./log4cplus/include
 CXXFLAGS = -Wall ${INCLUDE} ${LIB} -pthread -DREENTRANT ${DEBUG}
 
-hot_backup_server: main.o hot_backup_server.o common_function.o
+hot_backup_server: main.o hot_backup_server.o common_function.o hot_backup_client.o
 	${CXX} -o ./bin/$@ $^ ${CXXFLAGS}
 
 main.o: main.cc
@@ -23,6 +24,9 @@ hot_backup_server.o: hot_backup_server.cc
 	${CXX} -c $^ ${CXXFLAGS}
 
 common_function.o: common_function.cc
+	${CXX} -c $^ ${CXXFLAGS}
+
+hot_backup_client.o: hot_backup_client.cc
 	${CXX} -c $^ ${CXXFLAGS}
 
 
