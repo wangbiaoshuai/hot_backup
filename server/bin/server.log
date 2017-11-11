@@ -1,6 +1,0 @@
-[INFO ] [17/11/03 15:03:05.807] [Hot backup server Start!][hot_backup_server.cc:36] [tid:140436585506784]
-[INFO ] [17/11/03 15:03:05.808] [HeartBeat: start.][hot_backup_server.cc:126] [tid:140436585498368]
-[ERROR] [17/11/03 15:03:05.808] [HeartBeat: bind error(Cannot assign requested address).][hot_backup_server.cc:139] [tid:140436585498368]
-[INFO ] [17/11/03 15:03:05.808] [thread_function: heart beat stoped!][hot_backup_server.cc:93] [tid:140436585498368]
-[ERROR] [17/11/03 15:03:05.809] [CheckDatabaseStatus: database is abnormal.][hot_backup_server.cc:214] [tid:140436585506784]
-[INFO ] [17/11/03 15:03:05.809] [All is well. Sleep 5s...][hot_backup_server.cc:56] [tid:140436585506784]
