@@ -75,7 +75,7 @@ int HotBackupClient::Start()
         return -1;
     }
 
-    const char* data = "heart-beat";
+    const char* data = "client-heart-beat";
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -194,7 +194,7 @@ int HotBackupClient::StartHotBackupServer()
 
 int HotBackupClient::ParsePackage(const char* msg)
 {
-    if(strcmp(msg, "heart-beat") == 0)
+    if(strcmp(msg, "server-heart-beat") == 0)
     {
         return 0;
     }

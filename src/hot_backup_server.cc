@@ -239,7 +239,7 @@ void HotBackupServer::HeartBeat()
             LOG_ERROR("HeartBeat: recv message error("<<strerror(errno)<<").");
             continue;
         }
-        if(strcmp(data, "heart-beat") != 0)
+        if(strcmp(data, "client-heart-beat") != 0)
         {
             LOG_WARN("HeartBeat: recv message error, message="<<data);
             continue;
@@ -264,7 +264,8 @@ void HotBackupServer::HeartBeat()
         }
         else
         {
-            res = sendto(sock, data, strlen(data), 0, (struct sockaddr*)&client_addr, len);
+            char* msg = "server-heart-beat";
+            res = sendto(sock, msg, strlen(msg), 0, (struct sockaddr*)&client_addr, len);
             if(res < 0)
             {
                 LOG_ERROR("HeartBeat: send message error("<<strerror(errno)<<").");

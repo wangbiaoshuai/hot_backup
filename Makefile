@@ -45,5 +45,5 @@ package:
 .PHONY: clean
 
 clean:
-	${RM} -rf .build master slave
+	${RM} -rf .build master slave ./hot_backup_slave/bin/hot_backup_slave ./hot_backup_master/bin/hot_backup_master
 
