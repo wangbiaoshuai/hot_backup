@@ -15,6 +15,17 @@ function auto_switch_ip()
 {
     echo "begin auto switch ip."
     local_ip=$(ifconfig eth0 | egrep -o "inet addr:[^ ]*" | grep -o "[0-9.]*")
+    if [ "$local_ip" = "" ]
+    then
+        echo "Get local ip faile. Begin to read ifcfg-eth0..."
+        tmp=`\grep "GATEWAY" /etc/sysconfig/network-scripts/ifcfg-eth0`
+        local_ip=${tmp#*=}
+        if [ "$local_ip" = "" ]
+        then
+            echo "read ifcfg-eth0 failed. Please change local ip to static."
+            exit 1
+        fi
+    fi
     sub_ip=${local_ip%.*}
     remaind_ip=${local_ip##*.}
 
