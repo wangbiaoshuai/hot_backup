@@ -54,7 +54,13 @@ function switch_ip()
     service network stop
     sleep 3
     service network start
-    check_result $?
+    if [ "$?" != "0" ]
+    then
+        echo "switch ip failed. recovery..."
+        sed -i "s/^IPADDR.*/IPADDR=$local_ip/g" /etc/sysconfig/network-scripts/ifcfg-eth0
+        service network restart
+        exit 1
+    fi
 }
 
 function fix_services_ip()
